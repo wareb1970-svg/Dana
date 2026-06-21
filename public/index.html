@@ -186,27 +186,62 @@
     
     async function initFirebase() {
       try {
-        firebase.initializeApp(firebaseConfig);
+        console.log('Initializing Firebase...');
+        document.getElementById('loading').innerHTML += '<br><div style="font-size: 10px; color: #00aa88;">Connecting to Firebase...</div>';
+        
+        if (firebase.apps.length === 0) {
+          firebase.initializeApp(firebaseConfig);
+        }
+        
         db = firebase.database();
         civRef = db.ref('civilizations/main');
         
-        const snap = await civRef.once('value');
-        if (!snap.exists()) {
-          await civRef.set({
-            created: new Date().toISOString(),
-            hive: [],
-            traveling: [],
-            sanctuary: [],
-            name: 'Dana Prime',
-            gen: 0
-          });
-        }
+        console.log('Firebase connected, fetching data...');
+        document.getElementById('loading').innerHTML += '<br><div style="font-size: 10px; color: #00aa88;">Loading civilization...</div>';
         
-        document.getElementById('loading').style.display = 'none';
-        gameStarted = true;
-        startGame();
+        // Add timeout
+        let dataReceived = false;
+        const timeout = setTimeout(() => {
+          if (!dataReceived) {
+            console.error('Timeout waiting for Firebase data');
+            document.getElementById('loading').innerHTML = '<div style="color: #ff6666;">⚠️ Firebase timeout<br><br>Try refreshing the page</div>';
+          }
+        }, 5000);
+        
+        civRef.once('value', (snap) => {
+          clearTimeout(timeout);
+          dataReceived = true;
+          
+          if (!snap.exists()) {
+            console.log('No data exists, creating new civilization...');
+            civRef.set({
+              created: new Date().toISOString(),
+              hive: [],
+              traveling: [],
+              sanctuary: [],
+              name: 'Dana Prime',
+              gen: 0
+            }).then(() => {
+              console.log('Civilization created');
+              document.getElementById('loading').style.display = 'none';
+              gameStarted = true;
+              startGame();
+            });
+          } else {
+            console.log('Data loaded:', snap.val());
+            document.getElementById('loading').style.display = 'none';
+            gameStarted = true;
+            startGame();
+          }
+        }, (error) => {
+          clearTimeout(timeout);
+          console.error('Firebase error:', error);
+          document.getElementById('loading').innerHTML = '<div style="color: #ff6666;">❌ Firebase Error<br><br>' + error.message + '<br><br><small>Check your Realtime Database rules</small></div>';
+        });
+        
       } catch (err) {
-        document.getElementById('loading').innerHTML = '<div style="color: #ff6666;">❌ Firebase Error<br>' + err.message + '</div>';
+        console.error('Init error:', err);
+        document.getElementById('loading').innerHTML = '<div style="color: #ff6666;">❌ Error<br><br>' + err.message + '</div>';
       }
     }
     
