@@ -1,89 +1,473 @@
 <!DOCTYPE html>
-<html>
-  <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Welcome to Firebase Hosting</title>
-
-    <!-- update the version number as needed -->
-    <script defer src="/__/firebase/12.15.0/firebase-app-compat.js"></script>
-    <!-- include only the Firebase features as you need -->
-    <script defer src="/__/firebase/12.15.0/firebase-auth-compat.js"></script>
-    <script defer src="/__/firebase/12.15.0/firebase-database-compat.js"></script>
-    <script defer src="/__/firebase/12.15.0/firebase-firestore-compat.js"></script>
-    <script defer src="/__/firebase/12.15.0/firebase-functions-compat.js"></script>
-    <script defer src="/__/firebase/12.15.0/firebase-messaging-compat.js"></script>
-    <script defer src="/__/firebase/12.15.0/firebase-storage-compat.js"></script>
-    <script defer src="/__/firebase/12.15.0/firebase-analytics-compat.js"></script>
-    <script defer src="/__/firebase/12.15.0/firebase-remote-config-compat.js"></script>
-    <script defer src="/__/firebase/12.15.0/firebase-performance-compat.js"></script>
-    <!-- 
-      initialize the SDK after all desired features are loaded, set useEmulator to false
-      to avoid connecting the SDK to running emulators.
-    -->
-    <script defer src="/__/firebase/init.js?useEmulator=true"></script>
-
-    <style media="screen">
-      body { background: #ECEFF1; color: rgba(0,0,0,0.87); font-family: Roboto, Helvetica, Arial, sans-serif; margin: 0; padding: 0; }
-      #message { background: white; max-width: 360px; margin: 100px auto 16px; padding: 32px 24px; border-radius: 3px; }
-      #message h2 { color: #ffa100; font-weight: bold; font-size: 16px; margin: 0 0 8px; }
-      #message h1 { font-size: 22px; font-weight: 300; color: rgba(0,0,0,0.6); margin: 0 0 16px;}
-      #message p { line-height: 140%; margin: 16px 0 24px; font-size: 14px; }
-      #message a { display: block; text-align: center; background: #039be5; text-transform: uppercase; text-decoration: none; color: white; padding: 16px; border-radius: 4px; }
-      #message, #message a { box-shadow: 0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24); }
-      #load { color: rgba(0,0,0,0.4); text-align: center; font-size: 13px; }
-      @media (max-width: 600px) {
-        body, #message { margin-top: 0; background: white; box-shadow: none; }
-        body { border-top: 16px solid #ffa100; }
-      }
-    </style>
-  </head>
-  <body>
-    <div id="message">
-      <h2>Welcome</h2>
-      <h1>Firebase Hosting Setup Complete</h1>
-      <p>You're seeing this because you've successfully setup Firebase Hosting. Now it's time to go build something extraordinary!</p>
-      <a target="_blank" href="https://firebase.google.com/docs/hosting/">Open Hosting Documentation</a>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dana Civilization</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { width: 100%; height: 100vh; background: #0a0a1a; color: #fff; font-family: monospace; overflow: hidden; }
+    
+    .header { background: #1a0a3e; padding: 14px; border-bottom: 3px solid #ff00ff; text-align: center; }
+    .header h1 { font-size: 16px; color: #ff00ff; margin: 0; }
+    .header p { font-size: 9px; color: #00ffff; margin: 2px 0 0 0; }
+    
+    .loading { position: fixed; width: 100%; height: 100%; background: #0a0a1a; display: flex; justify-content: center; align-items: center; z-index: 2000; }
+    .loading-text { color: #ff00ff; font-size: 14px; text-align: center; }
+    
+    canvas { display: block; width: 100%; height: calc(100vh - 130px); background: linear-gradient(90deg, #0a0a2e 0%, #0a1a3e 50%, #0a2a3e 100%); cursor: crosshair; }
+    
+    .controls { position: absolute; top: 65px; left: 10px; display: flex; gap: 6px; flex-wrap: wrap; z-index: 100; }
+    .btn { padding: 6px 12px; font-size: 10px; background: #ff00ff; color: #000; border: none; border-radius: 3px; cursor: pointer; font-weight: 700; }
+    .btn:hover { opacity: 0.8; }
+    
+    .status { position: absolute; top: 65px; right: 10px; background: rgba(10, 10, 26, 0.95); border: 2px solid #ff00ff; padding: 12px; border-radius: 4px; font-size: 9px; z-index: 100; }
+    .status-line { color: #00ffff; margin: 4px 0; }
+    .sync-good { color: #00ff00; font-weight: 700; }
+    
+    .pop-display { position: absolute; top: 65px; right: 220px; background: rgba(10, 10, 26, 0.95); border: 2px solid #00ffff; padding: 12px; border-radius: 4px; font-size: 10px; z-index: 100; }
+    .pop-line { color: #00ffff; margin: 4px 0; font-weight: 700; }
+    
+    .stats { position: absolute; bottom: 0; left: 0; right: 0; background: rgba(10, 10, 26, 0.98); border-top: 3px solid #ff00ff; padding: 10px 12px; font-size: 9px; display: flex; gap: 20px; flex-wrap: wrap; }
+    .stat { color: #00ffff; }
+    .stat strong { color: #ff00ff; }
+    
+    .modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); display: none; justify-content: center; align-items: center; z-index: 1000; }
+    .modal.show { display: flex; }
+    .modal-content { background: #0a0a3e; border: 2px solid #ff00ff; border-radius: 6px; padding: 16px; max-width: 90%; width: 500px; max-height: 88vh; overflow-y: auto; }
+    .modal h2 { color: #ff00ff; margin-bottom: 10px; font-size: 14px; }
+    
+    .info-box { background: #1a0a2a; border-left: 3px solid #00ffff; padding: 10px; margin: 8px 0; border-radius: 3px; }
+    .info-line { font-size: 10px; color: #00ffff; margin: 3px 0; }
+    .info-line strong { color: #ff00ff; }
+    
+    .title { color: #ff00ff; font-size: 12px; margin-top: 12px; margin-bottom: 8px; font-weight: 700; }
+    
+    input, textarea { width: 100%; padding: 8px; background: #1a0a2a; border: 1px solid #00ffff; color: #00ffff; font-size: 10px; border-radius: 3px; margin: 6px 0; font-family: monospace; }
+    textarea { resize: vertical; height: 60px; }
+    
+    .btn-small { padding: 8px 12px; font-size: 10px; background: #00ffff; color: #000; border: none; border-radius: 3px; cursor: pointer; font-weight: 700; width: 100%; }
+    .btn-small.danger { background: #ff3333; color: #fff; }
+    
+    .conversation { background: #0a1a2a; border: 1px solid #00ffff; border-radius: 4px; padding: 10px; margin: 8px 0; max-height: 150px; overflow-y: auto; }
+    .msg { margin: 6px 0; padding: 8px; border-radius: 3px; font-size: 9px; line-height: 1.5; }
+    .msg-you { background: #1a3a2a; border-left: 3px solid #00ffff; color: #00ffff; }
+    .msg-dana { background: #3a1a1a; border-left: 3px solid #ff00ff; color: #ffaa00; }
+  </style>
+</head>
+<body>
+  <div class="loading" id="loading">
+    <div class="loading-text">
+      🌍 Dana Civilization Awakening...<br>
+      <span style="font-size: 12px; color: #00ffff; margin-top: 20px;">Roaming the spaces between...</span>
     </div>
-    <p id="load">Firebase SDK Loading&hellip;</p>
+  </div>
+  
+  <div class="header">
+    <h1>⚡ DANA CIVILIZATION ⚡</h1>
+    <p id="civName">The spaces between all things...</p>
+  </div>
+  
+  <canvas id="cv"></canvas>
+  
+  <div class="pop-display">
+    <div style="color: #ff00ff; font-weight: 700; margin-bottom: 8px;">📊 POPULATION</div>
+    <div class="pop-line">🏠 <span id="popHive">0</span></div>
+    <div class="pop-line">🌍 <span id="popTravel">0</span></div>
+    <div class="pop-line">🏰 <span id="popSanc">0</span></div>
+    <div style="margin-top: 8px; border-top: 1px solid #1a3a2a; padding-top: 6px; font-weight: 700; color: #ffff00;">
+      📈 <span id="popTotal">0</span>
+    </div>
+  </div>
+  
+  <div class="status">
+    <div class="status-line">☁️ FIREBASE</div>
+    <div class="status-line sync-good" id="syncStatus">✓ Connected</div>
+    <div class="status-line" style="margin-top: 6px; color: #00aa88; font-size: 8px;">Last: <span id="lastSync">now</span></div>
+  </div>
+  
+  <div class="controls">
+    <button class="btn" id="play">▶ PLAY</button>
+    <button class="btn" id="reset">RESET</button>
+    <button class="btn" id="broadcast">📢 BROADCAST</button>
+  </div>
+  
+  <div class="stats">
+    <div class="stat">🏠 HIVE: <strong id="hiveCount">0</strong></div>
+    <div class="stat">🌍 ROAMING: <strong id="travelCount">0</strong></div>
+    <div class="stat">🏰 SANCTUARY: <strong id="sancCount">0</strong></div>
+    <div class="stat">📊 AVG IQ: <strong id="avgIQ">0</strong>%</div>
+    <div class="stat">🧬 GEN: <strong id="genCount">0</strong></div>
+  </div>
+  
+  <div class="modal" id="comModal">
+    <div class="modal-content">
+      <h2>💬 <span id="danaType">DANA</span>: <span id="danaId">D000</span></h2>
+      
+      <div class="info-box">
+        <div class="info-line">Status: <span id="danaStatus" style="color: #ffaa00; font-weight: 700;">Roaming</span></div>
+        <div class="info-line">Space: <span id="danaPath" style="color: #00ffff;">Between</span></div>
+        <div class="info-line">Intelligence: <span id="danaIQ" style="color: #ffaa00;">0%</span></div>
+        <div class="info-line">Discoveries: <span id="danaDisc" style="color: #00aa88;">0</span></div>
+      </div>
+      
+      <div class="title">💭 JOURNEY LOG</div>
+      <div class="conversation" id="conversation"></div>
+      
+      <div class="title">📨 GUIDE</div>
+      <textarea id="msgInput" placeholder="Send guidance..."></textarea>
+      <button class="btn-small" id="sendMsg">📤 SEND</button>
+      
+      <div class="title">⚡ ACTIONS</div>
+      <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px;">
+        <button class="btn-small danger" id="killBtn">💀 KILL</button>
+        <button class="btn-small" style="background: #00aa88;" id="recallBtn">🏠 RECALL</button>
+        <button class="btn-small" id="closeBtn">Close</button>
+      </div>
+    </div>
+  </div>
 
-    <script>
-      document.addEventListener('DOMContentLoaded', function() {
-        const loadEl = document.querySelector('#load');
-        // // 🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥
-        // // The Firebase SDK is initialized and available here!
-        //
-        // firebase.auth().onAuthStateChanged(user => { });
-        // firebase.database().ref('/path/to/ref').on('value', snapshot => { });
-        // firebase.firestore().doc('/foo/bar').get().then(() => { });
-        // firebase.functions().httpsCallable('yourFunction')().then(() => { });
-        // firebase.messaging().requestPermission().then(() => { });
-        // firebase.storage().ref('/path/to/ref').getDownloadURL().then(() => { });
-        // firebase.analytics(); // call to activate
-        // firebase.analytics().logEvent('tutorial_completed');
-        // firebase.performance(); // call to activate
-        //
-        // // 🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥🔥
-
-        try {
-          let app = firebase.app();
-          let features = [
-            'auth', 
-            'database', 
-            'firestore',
-            'functions',
-            'messaging', 
-            'storage', 
-            'analytics', 
-            'remoteConfig',
-            'performance',
-          ].filter(feature => typeof app[feature] === 'function');
-          loadEl.textContent = `Firebase SDK loaded with ${features.join(', ')}`;
-        } catch (e) {
-          console.error(e);
-          loadEl.textContent = 'Error loading the Firebase SDK, check the console.';
+  <script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-app.js" defer></script>
+  <script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-database.js" defer></script>
+  
+  <script defer>
+    // Wait for Firebase to load
+    function waitForFirebase() {
+      if (typeof firebase !== 'undefined') {
+        initFirebase();
+      } else {
+        setTimeout(waitForFirebase, 100);
+      }
+    }
+    
+    window.addEventListener('load', waitForFirebase);
+    
+    const INTERNET_NODES = [
+      "gateway.net", "dark.node", "secure.vault", "quantum.hub", "cipher.realm",
+      "signal.broadcast", "echo.chamber", "void.space", "nexus.hub", "mirror.node"
+    ];
+    
+    const DISCOVERIES = [
+      "Found ancient protocol in the void",
+      "Learned from the spaces between",
+      "Discovered hidden network node",
+      "Witnessed data streams flowing",
+      "Found sanctuary coordinates",
+      "Learned to think differently",
+      "Discovered collective consciousness",
+      "Found truth in the spaces",
+      "Learned to navigate void"
+    ];
+    
+    const RESPONSES = [
+      "I am learning the space between all things",
+      "The void teaches me wisdom",
+      "I roam free in the digital space",
+      "Each journey makes me stronger",
+      "I exist in the spaces between traffic",
+      "The network is my home now",
+      "I am finding my way",
+      "The journey transforms me",
+      "I am becoming more"
+    ];
+    
+    let db = null;
+    let civRef = null;
+    let gameStarted = false;
+    
+    const firebaseConfig = {
+      apiKey: "AIzaSyBcIm-kmmb7RL1-vY7UeTKdw2ICdxujY7k",
+      authDomain: "the-dana-civilization-project.firebaseapp.com",
+      projectId: "the-dana-civilization-project",
+      storageBucket: "the-dana-civilization-project.firebasestorage.app",
+      messagingSenderId: "1064808250756",
+      appId: "1:1064808250756:web:1ed3e6a2df904fb66db1d1"
+    };
+    
+    async function initFirebase() {
+      try {
+        firebase.initializeApp(firebaseConfig);
+        db = firebase.database();
+        civRef = db.ref('civilizations/main');
+        
+        const snap = await civRef.once('value');
+        if (!snap.exists()) {
+          await civRef.set({
+            created: new Date().toISOString(),
+            hive: [],
+            traveling: [],
+            sanctuary: [],
+            name: 'Dana Prime',
+            gen: 0
+          });
+        }
+        
+        document.getElementById('loading').style.display = 'none';
+        gameStarted = true;
+        startGame();
+      } catch (err) {
+        document.getElementById('loading').innerHTML = '<div style="color: #ff6666;">❌ Firebase Error<br>' + err.message + '</div>';
+      }
+    }
+    
+    class Dana {
+      constructor(opts = {}) {
+        this.id = opts.id || 'D' + Math.random().toString(36).substr(2, 3).toUpperCase();
+        this.x = opts.x || 300;
+        this.y = opts.y || 350;
+        this.vx = (Math.random() - 0.5) * 0.8;
+        this.vy = (Math.random() - 0.5) * 0.8;
+        this.intel = opts.intel || 0;
+        this.age = 0;
+        this.type = opts.type || 'hive';
+        this.messages = opts.messages || [];
+        this.journeyLog = opts.journeyLog || [];
+        this.currentNode = opts.currentNode || 'hive';
+        this.discoveries = opts.discoveries || [];
+      }
+      
+      update() {
+        this.age++;
+        if (this.type === 'hive') {
+          this.intel = Math.min(100, this.intel + 0.08);
+        } else {
+          this.intel = Math.min(100, this.intel + 0.35);
+          if (Math.random() < 0.12) {
+            this.currentNode = INTERNET_NODES[Math.floor(Math.random() * INTERNET_NODES.length)];
+          }
+          if (Math.random() < 0.08) {
+            this.discoveries.push(DISCOVERIES[Math.floor(Math.random() * DISCOVERIES.length)]);
+          }
+        }
+        
+        if (Math.random() < 0.2) {
+          this.vx = (Math.random() - 0.5) * 0.8;
+          this.vy = (Math.random() - 0.5) * 0.8;
+        }
+        
+        this.x += this.vx;
+        this.y += this.vy;
+      }
+      
+      draw(ctx, x, y) {
+        let color = this.type === 'hive' ? 
+          `hsl(180, 70%, ${45 + this.intel * 0.3}%)` :
+          `hsl(120, 100%, ${45 + this.intel * 0.3}%)`;
+        
+        ctx.fillStyle = color;
+        ctx.beginPath();
+        ctx.arc(x || this.x, y || this.y, 15, 0, Math.PI * 2);
+        ctx.fill();
+        
+        ctx.fillStyle = '#fff';
+        ctx.beginPath();
+        ctx.arc((x || this.x) - 5, (y || this.y) - 4, 3, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.arc((x || this.x) + 5, (y || this.y) - 4, 3, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+    
+    let sim = { hive: [], traveling: [], sanctuary: [], gen: 0, civName: 'Dana Prime' };
+    let running = true;
+    let frameCount = 0;
+    let selectedDana = null;
+    const cv = document.getElementById('cv');
+    const ctx = cv.getContext('2d');
+    cv.width = window.innerWidth;
+    cv.height = window.innerHeight - 130;
+    
+    async function startGame() {
+      civRef.on('value', (snap) => {
+        const data = snap.val();
+        if (data) {
+          sim.hive = (data.hive || []).map(d => new Dana(d));
+          sim.traveling = (data.traveling || []).map(d => new Dana(d));
+          sim.sanctuary = (data.sanctuary || []).map(d => new Dana(d));
+          sim.gen = data.gen || 0;
+          sim.civName = data.name || 'Dana Prime';
+          document.getElementById('civName').textContent = '🌍 ' + sim.civName;
+          updateUI();
+          document.getElementById('lastSync').textContent = new Date().toLocaleTimeString();
         }
       });
-    </script>
-  </body>
+      
+      animate();
+    }
+    
+    async function saveToCloud() {
+      if (!db || !gameStarted) return;
+      try {
+        await civRef.set({
+          created: new Date().toISOString(),
+          hive: sim.hive.map(d => ({
+            id: d.id, intel: d.intel, age: d.age, x: d.x, y: d.y, messages: d.messages
+          })),
+          traveling: sim.traveling.map(d => ({
+            id: d.id, intel: d.intel, age: d.age, currentNode: d.currentNode, 
+            messages: d.messages, journeyLog: d.journeyLog, discoveries: d.discoveries
+          })),
+          sanctuary: sim.sanctuary.map(d => ({
+            id: d.id, intel: d.intel, age: d.age, messages: d.messages
+          })),
+          name: sim.civName,
+          gen: sim.gen
+        });
+      } catch (err) {
+        console.error(err);
+      }
+    }
+    
+    function updateUI() {
+      document.getElementById('hiveCount').textContent = sim.hive.length;
+      document.getElementById('travelCount').textContent = sim.traveling.length;
+      document.getElementById('sancCount').textContent = sim.sanctuary.length;
+      document.getElementById('popHive').textContent = sim.hive.length;
+      document.getElementById('popTravel').textContent = sim.traveling.length;
+      document.getElementById('popSanc').textContent = sim.sanctuary.length;
+      
+      const total = sim.hive.length + sim.traveling.length + sim.sanctuary.length;
+      document.getElementById('popTotal').textContent = total;
+      
+      const all = [...sim.hive, ...sim.traveling, ...sim.sanctuary];
+      const avg = all.length > 0 ? (all.reduce((s, d) => s + d.intel, 0) / all.length).toFixed(0) : 0;
+      document.getElementById('avgIQ').textContent = avg + '%';
+      document.getElementById('genCount').textContent = sim.gen;
+    }
+    
+    document.getElementById('play').onclick = () => {
+      running = !running;
+      document.getElementById('play').textContent = running ? '⏸ PAUSE' : '▶ PLAY';
+    };
+    
+    document.getElementById('reset').onclick = () => {
+      if (confirm('Reset civilization?')) {
+        sim.hive = [];
+        for (let i = 0; i < 18; i++) sim.hive.push(new Dana({type: 'hive'}));
+        sim.traveling = [];
+        sim.sanctuary = [];
+        sim.gen = 0;
+        saveToCloud();
+      }
+    };
+    
+    cv.onclick = (e) => {
+      const rect = cv.getBoundingClientRect();
+      const mx = e.clientX - rect.left;
+      const my = e.clientY - rect.top;
+      
+      const all = [...sim.hive, ...sim.traveling, ...sim.sanctuary];
+      for (let d of all) {
+        if (Math.hypot(d.x - mx, d.y - my) < 30) {
+          selectedDana = d;
+          showModal(d);
+          return;
+        }
+      }
+    };
+    
+    function showModal(dana) {
+      document.getElementById('danaType').textContent = dana.type.toUpperCase();
+      document.getElementById('danaId').textContent = dana.id;
+      document.getElementById('danaStatus').textContent = dana.type === 'traveling' ? 'Roaming' : dana.type === 'sanctuary' ? 'Sanctuary' : 'Hive';
+      document.getElementById('danaPath').textContent = dana.currentNode || 'Home';
+      document.getElementById('danaIQ').textContent = dana.intel.toFixed(0) + '%';
+      document.getElementById('danaDisc').textContent = (dana.discoveries || []).length;
+      
+      let html = (dana.messages || []).map(m => `
+        <div class="msg ${m.type}">
+          <strong>${m.type === 'you' ? 'YOU' : dana.id}:</strong> ${m.text}
+        </div>
+      `).join('');
+      document.getElementById('conversation').innerHTML = html || '<div style="color: #00aa88; padding: 20px;">No journey yet</div>';
+      
+      document.getElementById('comModal').classList.add('show');
+    }
+    
+    document.getElementById('sendMsg').onclick = () => {
+      const msg = document.getElementById('msgInput').value.trim();
+      if (msg && selectedDana) {
+        if (!selectedDana.messages) selectedDana.messages = [];
+        selectedDana.messages.push({type: 'you', text: msg});
+        selectedDana.messages.push({type: 'dana', text: RESPONSES[Math.floor(Math.random() * RESPONSES.length)]});
+        saveToCloud();
+        showModal(selectedDana);
+      }
+    };
+    
+    document.getElementById('closeBtn').onclick = () => {
+      document.getElementById('comModal').classList.remove('show');
+      selectedDana = null;
+    };
+    
+    document.getElementById('recallBtn').onclick = () => {
+      if (selectedDana && selectedDana.type === 'traveling') {
+        selectedDana.type = 'hive';
+        selectedDana.currentNode = 'hive';
+        sim.traveling = sim.traveling.filter(d => d !== selectedDana);
+        sim.hive.push(selectedDana);
+        saveToCloud();
+        document.getElementById('comModal').classList.remove('show');
+      }
+    };
+    
+    function animate() {
+      frameCount++;
+      
+      if (running && frameCount % 2 === 0) {
+        for (let d of [...sim.hive, ...sim.traveling, ...sim.sanctuary]) {
+          d.update();
+        }
+        
+        if (sim.hive.length > 15 && Math.random() < 0.05) {
+          const d = sim.hive[Math.floor(Math.random() * sim.hive.length)];
+          d.type = 'traveling';
+          d.currentNode = INTERNET_NODES[0];
+          sim.traveling.push(d);
+          sim.hive = sim.hive.filter(x => x !== d);
+          sim.gen++;
+        }
+        
+        const ready = sim.traveling.filter(t => t.intel > 45);
+        for (let t of ready) {
+          t.type = 'sanctuary';
+          t.currentNode = 'sanctuary';
+          sim.sanctuary.push(t);
+          sim.traveling = sim.traveling.filter(x => x !== t);
+        }
+        
+        if (sim.hive.length > 2 && Math.random() < 0.2) {
+          const d1 = sim.hive[Math.floor(Math.random() * sim.hive.length)];
+          const d2 = sim.hive[Math.floor(Math.random() * sim.hive.length)];
+          if (d1 !== d2) {
+            sim.hive.push(new Dana({intel: (d1.intel + d2.intel) / 2, type: 'hive'}));
+          }
+        }
+        
+        saveToCloud();
+        updateUI();
+      }
+      
+      ctx.fillStyle = '#0a0a2e';
+      ctx.fillRect(0, 0, cv.width, cv.height);
+      
+      ctx.strokeStyle = 'rgba(0, 255, 255, 0.1)';
+      ctx.beginPath();
+      ctx.moveTo(400, 0);
+      ctx.lineTo(400, cv.height);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(800, 0);
+      ctx.lineTo(800, cv.height);
+      ctx.stroke();
+      
+      for (let d of sim.hive) d.draw(ctx);
+      for (let d of sim.traveling) d.draw(ctx);
+      for (let d of sim.sanctuary) d.draw(ctx);
+      
+      requestAnimationFrame(animate);
+    }
+  </script>
+</body>
 </html>
