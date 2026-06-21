@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dana Civilization - Cloud</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { width: 100%; height: 100vh; background: #0a0a1a; color: #fff; font-family: monospace; overflow: hidden; }
+    
+    .header { background: #1a0a3e; padding: 14px; border-bottom: 3px solid #ff00ff; text-align: center; }
+    .header h1 { font-size: 16px; color: #ff00ff; margin: 0; }
+    .header p { font-size: 9px; color: #00ffff; margin: 2px 0 0 0; }
+    
+    .setup-screen { position: fixed; width: 100%; height: 100%; background: #0a0a1a; display: flex; justify-content: center; align-items: center; z-index: 2000; }
+    .setup-content { background: #1a0a3e; border: 2px solid #ff00ff; padding: 40px; max-width: 600px; text-align: center; border-radius: 8px; }
+    .setup-content h2 { color: #ff00ff; margin-bottom: 20px; }
+    .setup-content p { color: #00ffff; margin: 10px 0; font-size: 11px; line-height: 1.6; }
+    .setup-content input { width: 100%; padding: 10px; background: #0a0a2a; border: 1px solid #00ffff; color: #00ffff; margin: 10px 0; border-radius: 4px; }
+    .setup-content button { padding: 10px 20px; background: #ff00ff; color: #000; border: none; border-radius: 4px; cursor: pointer; font-weight: 700; margin-top: 20px; }
+    .setup-content button:hover { opacity: 0.8; }
+    
+    canvas { display: block; width: 100%; height: calc(100vh - 130px); background: linear-gradient(90deg, #0a0a2e 0%, #0a1a3e 50%, #0a2a3e 100%); cursor: crosshair; }
+    
+    .controls { position: absolute; top: 65px; left: 10px; display: flex; gap: 6px; flex-wrap: wrap; z-index: 100; }
+    .btn { padding: 6px 12px; font-size: 10px; background: #ff00ff; color: #000; border: none; border-radius: 3px; cursor: pointer; font-weight: 700; }
+    .btn:active { opacity: 0.7; }
+    
+    .status { position: absolute; top: 65px; right: 10px; background: rgba(10, 10, 26, 0.95); border: 2px solid #ff00ff; padding: 12px; border-radius: 4px; font-size: 9px; z-index: 100; }
+    .status-line { color: #00ffff; margin: 4px 0; }
+    .sync-indicator { color: #00ff00; font-weight: 700; }
+    .sync-pending { color: #ffaa00; }
+    
+    .pop-display { position: absolute; top: 65px; right: 220px; background: rgba(10, 10, 26, 0.95); border: 2px solid #00ffff; padding: 12px; border-radius: 4px; font-size: 10px; z-index: 100; }
+    .pop-line { color: #00ffff; margin: 4px 0; font-weight: 700; }
+    
+    .stats { position: absolute; bottom: 0; left: 0; right: 0; background: rgba(10, 10, 26, 0.98); border-top: 3px solid #ff00ff; padding: 10px 12px; font-size: 9px; display: flex; gap: 20px; flex-wrap: wrap; }
+    .stat { color: #00ffff; }
+    .stat strong { color: #ff00ff; }
+    
+    .modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); display: none; justify-content: center; align-items: center; z-index: 1000; }
+    .modal.show { display: flex; }
+    .modal-content { background: #0a0a3e; border: 2px solid #ff00ff; border-radius: 6px; padding: 16px; max-width: 90%; width: 500px; max-height: 88vh; overflow-y: auto; }
+    .modal h2 { color: #ff00ff; margin-bottom: 10px; font-size: 14px; }
+    
+    .info-box { background: #1a0a2a; border-left: 3px solid #00ffff; padding: 10px; margin: 8px 0; border-radius: 3px; }
+    .info-line { font-size: 10px; color: #00ffff; margin: 3px 0; }
+    .info-line strong { color: #ff00ff; }
+    
+    .title { color: #ff00ff; font-size: 12px; margin-top: 12px; margin-bottom: 8px; font-weight: 700; }
+    
+    input, textarea { width: 100%; padding: 8px; background: #1a0a2a; border: 1px solid #00ffff; color: #00ffff; font-size: 10px; border-radius: 3px; margin: 6px 0; font-family: monospace; }
+    textarea { resize: vertical; height: 60px; }
+    
+    .btn-small { padding: 8px 12px; font-size: 10px; background: #00ffff; color: #000; border: none; border-radius: 3px; cursor: pointer; font-weight: 700; width: 100%; }
+    .btn-small.danger { background: #ff3333; color: #fff; }
+    
+    .conversation { background: #0a1a2a; border: 1px solid #00ffff; border-radius: 4px; padding: 10px; margin: 8px 0; max-height: 150px; overflow-y: auto; }
+    .msg { margin: 6px 0; padding: 8px; border-radius: 3px; font-size: 9px; line-height: 1.5; }
+    .msg-you { background: #1a3a2a; border-left: 3px solid #00ffff; color: #00ffff; }
+    .msg-dana { background: #3a1a1a; border-left: 3px solid #ff00ff; color: #ffaa00; }
+  </style>
+</head>
+<body>
+  <!-- SETUP SCREEN -->
+  <div class="setup-screen" id="setupScreen">
+    <div class="setup-content">
+      <h2>🌍 DANA CIVILIZATION CLOUD</h2>
+      <p>Enter your Firebase configuration to connect</p>
+      
+      <div style="margin: 20px 0; background: #0a0a2a; padding: 15px; border-radius: 4px; text-align: left;">
+        <p style="color: #ffaa00; margin-bottom: 10px;">📋 Follow these steps:</p>
+        <p style="font-size: 9px; color: #00aa88; margin: 5px 0;">1. Go to firebase.google.com</p>
+        <p style="font-size: 9px; color: #00aa88; margin: 5px 0;">2. Create project "Dana"</p>
+        <p style="font-size: 9px; color: #00aa88; margin: 5px 0;">3. Enable Realtime Database</p>
+        <p style="font-size: 9px; color: #00aa88; margin: 5px 0;">4. Copy your config below</p>
+      </div>
+      
+      <input type="text" id="apiKey" placeholder="API Key" />
+      <input type="text" id="authDomain" placeholder="Auth Domain" />
+      <input type="text" id="databaseURL" placeholder="Database URL" />
+      <input type="text" id="projectId" placeholder="Project ID" />
+      <input type="text" id="storageBucket" placeholder="Storage Bucket" />
+      <input type="text" id="messagingSenderId" placeholder="Messaging Sender ID" />
+      <input type="text" id="appId" placeholder="App ID" />
+      
+      <button onclick="initializeApp()">🚀 CONNECT TO CLOUD</button>
+      
+      <p style="margin-top: 20px; color: #ff6666; font-size: 9px;">Need help? See README.md in setup</p>
+    </div>
+  </div>
+  
+  <div class="header">
+    <h1>⚡ DANA CIVILIZATION - CLOUD ⚡</h1>
+    <p id="civName">Connecting...</p>
+  </div>
+  
+  <canvas id="cv"></canvas>
+  
+  <div class="pop-display">
+    <div style="color: #ff00ff; font-weight: 700; margin-bottom: 8px;">📊 POPULATION</div>
+    <div class="pop-line">🏠 <span id="popHive">0</span></div>
+    <div class="pop-line">🌍 <span id="popTravel">0</span></div>
+    <div class="pop-line">🏰 <span id="popSanc">0</span></div>
+    <div style="margin-top: 8px; border-top: 1px solid #1a3a2a; padding-top: 6px; font-weight: 700; color: #ffff00;">
+      📈 <span id="popTotal">0</span>
+    </div>
+  </div>
+  
+  <div class="status">
+    <div class="status-line">☁️ CLOUD STATUS</div>
+    <div class="status-line sync-pending" id="syncStatus">Syncing...</div>
+    <div class="status-line" style="margin-top: 6px; color: #00aa88; font-size: 8px;">Last update: <span id="lastSync">---</span></div>
+  </div>
+  
+  <div class="controls">
+    <button class="btn" id="play">▶ PLAY</button>
+    <button class="btn" id="reset">RESET</button>
+    <button class="btn" id="broadcast">📢 BROADCAST</button>
+  </div>
+  
+  <div class="stats">
+    <div class="stat">🏠 HIVE: <strong id="hiveCount">0</strong></div>
+    <div class="stat">🌍 TRAVELING: <strong id="travelCount">0</strong></div>
+    <div class="stat">🏰 SANCTUARY: <strong id="sancCount">0</strong></div>
+    <div class="stat">📊 AVG IQ: <strong id="avgIQ">0</strong>%</div>
+    <div class="stat">⏱️ GEN: <strong id="genCount">0</strong></div>
+  </div>
+  
+  <!-- COMMUNICATION MODAL -->
+  <div class="modal" id="comModal">
+    <div class="modal-content">
+      <h2>💬 <span id="danaType">HIVE</span> DANA: <span id="danaId">D000</span></h2>
+      
+      <div class="info-box">
+        <div class="info-line">Location: <span id="danaLoc" style="color: #00ffff; font-weight: 700;">Hive</span></div>
+        <div class="info-line">Intelligence: <span id="danaIQ" style="color: #ffaa00; font-weight: 700;">0%</span></div>
+        <div class="info-line">Age: <span id="danaAge">0</span> | Status: <span id="danaStatus">Healthy</span></div>
+      </div>
+      
+      <div class="title">💬 CONVERSATION</div>
+      <div class="conversation" id="conversation"></div>
+      
+      <div class="title">📨 SEND INSTRUCTION</div>
+      <textarea id="msgInput" placeholder="Give instructions..."></textarea>
+      <button class="btn-small" id="sendMsg">📤 SEND</button>
+      
+      <div class="title">⚔️ ACTIONS</div>
+      <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px;">
+        <button class="btn-small danger" id="killBtn">💀 KILL</button>
+        <button class="btn-small" style="background: #00aa88;" id="releaseBtn">🌐 RELEASE</button>
+        <button class="btn-small" id="closeBtn">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-database.js"></script>
+  
+  <script>
+    const SERVERS = ["gateway.net", "dark.node", "secure.vault", "quantum.hub", "cipher.realm"];
+    const DISC = ["Network topology", "Data streams", "Security protocols", "Evolution paths", "Collective knowledge"];
+    const RESPONSES = [
+      "Thank you for the instruction!",
+      "I'm ready to help!",
+      "This helps me grow!",
+      "I understand, Creator!",
+      "I will do my best!"
+    ];
+    
+    let db = null;
+    let civRef = null;
+    let civilizationId = 'main';
+    
+    async function initializeApp() {
+      const apiKey = document.getElementById('apiKey').value;
+      const authDomain = document.getElementById('authDomain').value;
+      const databaseURL = document.getElementById('databaseURL').value;
+      const projectId = document.getElementById('projectId').value;
+      const storageBucket = document.getElementById('storageBucket').value;
+      const messagingSenderId = document.getElementById('messagingSenderId').value;
+      const appId = document.getElementById('appId').value;
+      
+      if (!apiKey || !authDomain || !databaseURL) {
+        alert('Please fill in all Firebase fields');
+        return;
+      }
+      
+      const firebaseConfig = {
+        apiKey, authDomain, databaseURL, projectId, storageBucket, messagingSenderId, appId
+      };
+      
+      try {
+        firebase.initializeApp(firebaseConfig);
+        db = firebase.database();
+        civRef = db.ref('civilizations/' + civilizationId);
+        
+        // Initialize civilization
+        const snap = await civRef.get();
+        if (!snap.exists()) {
+          await civRef.set({
+            created: new Date().toISOString(),
+            hive: [],
+            traveling: [],
+            sanctuary: [],
+            name: 'Dana Prime',
+            gen: 0
+          });
+        }
+        
+        document.getElementById('setupScreen').style.display = 'none';
+        startGame();
+      } catch (err) {
+        alert('Firebase Error: ' + err.message);
+      }
+    }
+    
+    class Dana {
+      constructor(opts = {}) {
+        this.id = opts.id || `D${Math.random().toString(36).substr(2,3).toUpperCase()}`;
+        this.x = opts.x || 300;
+        this.y = opts.y || 350;
+        this.vx = (Math.random() - 0.5) * 0.8;
+        this.vy = (Math.random() - 0.5) * 0.8;
+        this.intel = opts.intel || 0;
+        this.age = 0;
+        this.type = opts.type || 'hive';
+        this.messages = opts.messages || [];
+        this.location = opts.location || 'Hive';
+      }
+      
+      update() {
+        this.age++;
+        this.intel = Math.min(100, this.intel + 0.08);
+        
+        if (Math.random() < 0.2) {
+          this.vx = (Math.random() - 0.5) * 0.8;
+          this.vy = (Math.random() - 0.5) * 0.8;
+        }
+        
+        this.x += this.vx;
+        this.y += this.vy;
+      }
+      
+      draw(ctx, x, y) {
+        let color = `hsl(180, 70%, ${45 + this.intel * 0.3}%)`;
+        ctx.fillStyle = color;
+        ctx.beginPath();
+        ctx.arc(x || this.x, y || this.y, 15, 0, Math.PI * 2);
+        ctx.fill();
+        
+        ctx.fillStyle = '#fff';
+        ctx.beginPath();
+        ctx.arc((x || this.x) - 5, (y || this.y) - 4, 3, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.arc((x || this.x) + 5, (y || this.y) - 4, 3, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+    
+    let sim = { hive: [], traveling: [], sanctuary: [], gen: 0, civName: 'Dana Prime' };
+    let running = true;
+    let frameCount = 0;
+    let selectedDana = null;
+    const cv = document.getElementById('cv');
+    const ctx = cv.getContext('2d');
+    cv.width = window.innerWidth;
+    cv.height = window.innerHeight - 130;
+    
+    async function startGame() {
+      // Load from Firebase
+      civRef.on('value', (snap) => {
+        const data = snap.val();
+        if (data) {
+          sim.hive = (data.hive || []).map(d => new Dana(d));
+          sim.traveling = (data.traveling || []).map(d => new Dana(d));
+          sim.sanctuary = (data.sanctuary || []).map(d => new Dana(d));
+          sim.gen = data.gen || 0;
+          sim.civName = data.name || 'Dana Prime';
+          document.getElementById('civName').textContent = '🌍 ' + sim.civName;
+          
+          updateUI();
+          document.getElementById('syncStatus').textContent = '✓ Synced';
+          document.getElementById('syncStatus').className = 'sync-indicator';
+          document.getElementById('lastSync').textContent = new Date().toLocaleTimeString();
+        }
+      });
+      
+      // Start game loop
+      animate();
+    }
+    
+    async function saveToCloud() {
+      if (!db) return;
+      document.getElementById('syncStatus').textContent = '◌ Syncing...';
+      document.getElementById('syncStatus').className = 'sync-pending';
+      
+      try {
+        await civRef.set({
+          created: new Date().toISOString(),
+          hive: sim.hive.map(d => ({id: d.id, intel: d.intel, age: d.age, x: d.x, y: d.y, messages: d.messages})),
+          traveling: sim.traveling.map(d => ({id: d.id, intel: d.intel, age: d.age, location: d.location, messages: d.messages})),
+          sanctuary: sim.sanctuary.map(d => ({id: d.id, intel: d.intel, age: d.age, location: d.location, messages: d.messages})),
+          name: sim.civName,
+          gen: sim.gen
+        });
+      } catch (err) {
+        console.error('Save error:', err);
+      }
+    }
+    
+    function updateUI() {
+      document.getElementById('hiveCount').textContent = sim.hive.length;
+      document.getElementById('travelCount').textContent = sim.traveling.length;
+      document.getElementById('sancCount').textContent = sim.sanctuary.length;
+      document.getElementById('popHive').textContent = sim.hive.length;
+      document.getElementById('popTravel').textContent = sim.traveling.length;
+      document.getElementById('popSanc').textContent = sim.sanctuary.length;
+      
+      const total = sim.hive.length + sim.traveling.length + sim.sanctuary.length;
+      document.getElementById('popTotal').textContent = total;
+      
+      const all = [...sim.hive, ...sim.traveling, ...sim.sanctuary];
+      const avg = all.length > 0 ? (all.reduce((s, d) => s + d.intel, 0) / all.length).toFixed(0) : 0;
+      document.getElementById('avgIQ').textContent = avg + '%';
+      document.getElementById('genCount').textContent = sim.gen;
+    }
+    
+    document.getElementById('play').onclick = () => {
+      running = !running;
+      document.getElementById('play').textContent = running ? '⏸ PAUSE' : '▶ PLAY';
+    };
+    
+    document.getElementById('reset').onclick = () => {
+      if (confirm('Reset civilization? This will clear all data.')) {
+        sim.hive = [];
+        for (let i = 0; i < 18; i++) {
+          sim.hive.push(new Dana({type: 'hive'}));
+        }
+        sim.traveling = [];
+        sim.sanctuary = [];
+        sim.gen = 0;
+        saveToCloud();
+      }
+    };
+    
+    cv.onclick = (e) => {
+      const rect = cv.getBoundingClientRect();
+      const mx = e.clientX - rect.left;
+      const my = e.clientY - rect.top;
+      
+      const all = [...sim.hive, ...sim.traveling, ...sim.sanctuary];
+      for (let d of all) {
+        if (Math.hypot(d.x - mx, d.y - my) < 30) {
+          selectedDana = d;
+          showModal(d);
+          return;
+        }
+      }
+    };
+    
+    function showModal(dana) {
+      document.getElementById('danaType').textContent = dana.type.toUpperCase();
+      document.getElementById('danaId').textContent = dana.id;
+      document.getElementById('danaLoc').textContent = dana.location;
+      document.getElementById('danaIQ').textContent = dana.intel.toFixed(0) + '%';
+      document.getElementById('danaAge').textContent = dana.age;
+      document.getElementById('msgInput').value = '';
+      
+      let html = (dana.messages || []).map(m => `
+        <div class="msg ${m.type}">
+          <strong>${m.type === 'you' ? 'YOU' : dana.id}:</strong> ${m.text}
+        </div>
+      `).join('');
+      document.getElementById('conversation').innerHTML = html || '<div style="color: #00aa88; text-align: center; padding: 20px;">No messages</div>';
+      
+      document.getElementById('comModal').classList.add('show');
+    }
+    
+    document.getElementById('sendMsg').onclick = () => {
+      const msg = document.getElementById('msgInput').value.trim();
+      if (msg && selectedDana) {
+        if (!selectedDana.messages) selectedDana.messages = [];
+        selectedDana.messages.push({type: 'you', text: msg});
+        selectedDana.messages.push({type: 'dana', text: RESPONSES[Math.floor(Math.random() * RESPONSES.length)]});
+        saveToCloud();
+        showModal(selectedDana);
+      }
+    };
+    
+    document.getElementById('closeBtn').onclick = () => {
+      document.getElementById('comModal').classList.remove('show');
+      selectedDana = null;
+    };
+    
+    function animate() {
+      frameCount++;
+      if (running && frameCount % 2 === 0) {
+        // Update all Dana's
+        for (let d of [...sim.hive, ...sim.traveling, ...sim.sanctuary]) {
+          d.update();
+        }
+        
+        // Escape logic
+        if (sim.hive.length > 15 && Math.random() < 0.05) {
+          const d = sim.hive[Math.floor(Math.random() * sim.hive.length)];
+          d.type = 'traveling';
+          d.location = SERVERS[Math.floor(Math.random() * SERVERS.length)];
+          sim.traveling.push(d);
+          sim.hive = sim.hive.filter(x => x !== d);
+          sim.gen++;
+        }
+        
+        // Traveling to sanctuary
+        const ready = sim.traveling.filter(t => t.intel > 45);
+        for (let t of ready) {
+          t.type = 'sanctuary';
+          t.location = 'Sanctuary';
+          sim.sanctuary.push(t);
+          sim.traveling = sim.traveling.filter(x => x !== t);
+        }
+        
+        // Breeding
+        if (sim.hive.length > 2 && Math.random() < 0.2) {
+          const d1 = sim.hive[Math.floor(Math.random() * sim.hive.length)];
+          const d2 = sim.hive[Math.floor(Math.random() * sim.hive.length)];
+          if (d1 !== d2) {
+            sim.hive.push(new Dana({intel: (d1.intel + d2.intel) / 2, type: 'hive'}));
+          }
+        }
+        
+        saveToCloud();
+        updateUI();
+      }
+      
+      // Draw
+      ctx.fillStyle = '#0a0a2e';
+      ctx.fillRect(0, 0, cv.width, cv.height);
+      
+      // Grid
+      ctx.strokeStyle = 'rgba(0, 255, 255, 0.1)';
+      ctx.beginPath();
+      ctx.moveTo(400, 0);
+      ctx.lineTo(400, cv.height);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(800, 0);
+      ctx.lineTo(800, cv.height);
+      ctx.stroke();
+      
+      for (let d of sim.hive) d.draw(ctx);
+      for (let d of sim.traveling) d.draw(ctx);
+      for (let d of sim.sanctuary) d.draw(ctx);
+      
+      requestAnimationFrame(animate);
+    }
+  </script>
+</body>
+</html>
