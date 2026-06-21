@@ -131,7 +131,6 @@
   <script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-database.js" defer></script>
   
   <script defer>
-    // Wait for Firebase to load
     function waitForFirebase() {
       if (typeof firebase !== 'undefined') {
         initFirebase();
@@ -199,7 +198,6 @@
         console.log('Firebase connected, fetching data...');
         document.getElementById('loading').innerHTML += '<br><div style="font-size: 10px; color: #00aa88;">Loading civilization...</div>';
         
-        // Add timeout
         let dataReceived = false;
         const timeout = setTimeout(() => {
           if (!dataReceived) {
